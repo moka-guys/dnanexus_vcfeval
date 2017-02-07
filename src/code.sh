@@ -41,6 +41,7 @@ tabix -p vcf ~/normalised.vcf.gz
 
 # run RTG
 /usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b /home/dnanexus/GIAB_NA12878_v2.18_minus_chr.vcf.gz --bed-regions intersect.bed -c ~/normalised.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=QUAL
+/usr/bin/rtg-tools-3.7-23b7d60/rtg rocplot --png=/home/dnanexus/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.roccurve.png /home/dnanexus/out/rtg_output/vcfeval_output/rtg/weighted_roc.tsv.gz
 
 python read_vcf_output.py
 mv  ~/$input_vcf_prefix.minuschr_normalised.vcf ~/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.minuschr_normalised.vcf
