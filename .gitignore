@@ -1,1 +1,5 @@
-resources/
+/resources/usr/
+*.bed
+*.fa
+*.vcf.gz
+*vcf.gz.tbi

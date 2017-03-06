@@ -37,13 +37,16 @@ bgzip -c ~/$input_vcf_prefix.minuschr_normalised.vcf > ~/normalised.vcf.gz
 tabix -p vcf ~/normalised.vcf.gz
 
 #create intersect bedfile
- /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b ~/NA12878.bed > $panelnumber.NA12878intersect.bed
+ /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b ~/NA12878.bed > intersect.bed
 
 # run RTG
-/usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b /home/dnanexus/GIAB_NA12878_v2.18_minus_chr.vcf.gz --bed-regions $panelnumber.NA12878intersect.bed -c ~/normalised.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=QUAL
+/usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b /home/dnanexus/GIAB_NA12878_v2.18_minus_chr.vcf.gz --bed-regions intersect.bed -c ~/normalised.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=QUAL
+/usr/bin/rtg-tools-3.7-23b7d60/rtg rocplot --png=/home/dnanexus/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.roccurve.png /home/dnanexus/out/rtg_output/vcfeval_output/rtg/weighted_roc.tsv.gz
 
+python read_vcf_output.py
 mv  ~/$input_vcf_prefix.minuschr_normalised.vcf ~/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.minuschr_normalised.vcf
-mv $panelnumber.NA12878intersect.bed  ~/out/vcfeval_files/vcfeval_output/$panelnumber.NA12878intersect.bed
+mv ~/intersect.bed  ~/out/vcfeval_files/vcfeval_output/$panelnumber.NA12878intersect.bed
+mv ~/medcalc_input.txt ~/out/vcfeval_files/vcfeval_output/$panelnumber.medcalc_input.txt
 
 #mark-section "Uploading results"
 dx-upload-all-outputs --parallel
