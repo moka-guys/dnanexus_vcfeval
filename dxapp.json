@@ -14,8 +14,7 @@
       "name": "input_vcf",
       "label": "input vcf",
       "help": "The vcf file to be normalised and decomposed",
-      "class": "file",
-      "patterns": ["*.vcf"]
+      "class": "file"
     },
     {
       "name": "bedfile",
@@ -46,7 +45,7 @@
       ],
     "systemRequirements": {
       "main": {
-        "instanceType": "mem1_ssd2_x2"
+        "instanceType": "mem1_ssd1_x2"
       }
     },
     "file": "src/code.sh",

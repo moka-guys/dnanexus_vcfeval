@@ -1,11 +1,9 @@
 # dnanexus_vcfeval v1.1
 
 ## What does this app do?
-
 This calculates sensitivity and specificity using the NA12878 truth sample. 
 
 ## What are typical use cases for this app?
-
 When validating a new test, or changes to a process the NA12878 DNA sample can be run through a process. The resulting 'test' vcf  contains all the variants detected by the test.
 
 This list of variants can be compared to the truth set and then calculate specificity and sensitivity.
@@ -46,6 +44,11 @@ This app outputs:
 
 * A python scrip then parses the vcfeval outputs and the bed file to produce an output which can be easily entered into the medcalc software.
 
+## What are the limitations of this app
+The number of true negatives are calculated by counting the number of bases in the bed file and then subtracting the number of true positive, false positive and false negative variants.
+Therefore this true negative count may not be accurate if variants are *not single base variants*. 
+
+Also if regions in the bedfile overlap those positions will be counted twice, increasing the true negative count.
 
 ## This app was made by Viapath Genome Informatics 
 
