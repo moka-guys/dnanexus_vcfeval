@@ -14,7 +14,8 @@
       "name": "input_vcf",
       "label": "input vcf",
       "help": "The vcf file to be normalised and decomposed",
-      "class": "file"
+      "class": "file",
+      "patterns": ["*vcf*"]
     },
     {
       "name": "bedfile",
