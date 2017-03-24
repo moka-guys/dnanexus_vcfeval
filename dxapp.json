@@ -1,10 +1,13 @@
 {
   "name": "vcfeval",
   "title": "vcfeval",
-  "summary": "Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
+  "summary": "v1.1 - Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
   "tags": [
     "Create Truthset"
   ],
+      "properties": {
+    "github release": "v1.1"
+  },
   "dxapi": "1.0.0",
   "inputSpec": [
     {
@@ -12,7 +15,7 @@
       "label": "input vcf",
       "help": "The vcf file to be normalised and decomposed",
       "class": "file",
-      "patterns": ["*.vcf"]
+      "patterns": ["*vcf*"]
     },
     {
       "name": "bedfile",
@@ -43,7 +46,7 @@
       ],
     "systemRequirements": {
       "main": {
-        "instanceType": "mem2_hdd2_x2"
+        "instanceType": "mem1_ssd1_x2"
       }
     },
     "file": "src/code.sh",
