@@ -18,11 +18,34 @@
       "patterns": ["*vcf*"]
     },
     {
+      "name": "truth_vcf",
+      "label": "truth vcf",
+      "help": "The GIAB truth set vcf file",
+      "class": "file",
+      "patterns": ["*vcf*"]
+    },
+    {
       "name": "bedfile",
       "label": "bedfile",
       "help": "bedfile",
       "class": "file",
       "patterns": ["*.bed"]
+    },
+    {
+      "name": "score_field",
+      "class": "string",
+      "default": "QUAL",
+      "choices": [
+      "QUAL",
+      "INFO.QD",
+      "GQ", 
+      "DP",
+      "INFO.SOR",
+      "INFO.MQ",
+      "INFO.MQRankSum",
+      "INFO.ReadPosRankSum",
+      "INFO.FS"
+      ]
     }
   ],
   "outputSpec": [
