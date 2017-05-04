@@ -12,8 +12,7 @@ dx download "$input_vcf"
 dx download "$panel_bedfile" 
 dx download "$truth_vcf"
 dx download "$high_conf_bedfile"
-dx download project-F2VPgqQ0KzKZkPfQKJ90F8J2:/Workflows/vcfeval_test_may17/human_g1k_v37_chr1-22XYonly.fasta
-
+dx download "$ref_genome"
 
 echo "$input_vcf_name"
 vcfname="$input_vcf_name"
@@ -39,7 +38,7 @@ sed 's/chr//' $vcfname > ~/$input_vcf_prefix.minuschr.vcf
 sed  -i 's/chr//' $panelnumber.bed
 
 #create sdf
-/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf ~/human_g1k_v37_chr1-22XYonly.fasta
+/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf $ref_genome_name
 
 # #unzip truth VCF
 # gzip -cd $truth_vcf > /home/dnanexus/truth.vcf

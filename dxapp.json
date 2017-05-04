@@ -39,6 +39,13 @@
       "patterns": ["*.bed"]
     },
     {
+      "name": "ref_genome",
+      "label": "reference genome",
+      "help": "reference genome in fasta format",
+      "class": "file",
+      "patterns": ["*.fasta"]
+    },
+    {
       "name": "score_field",
       "class": "string",
       "default": "QUAL",
