@@ -9,8 +9,10 @@ sudo update-alternatives --install /usr/bin/java java /usr/bin/jdk1.8.0_45/bin/j
 
 # Fetch input files
 dx download "$input_vcf" 
-dx download "$bedfile" 
+dx download "$panel_bedfile" 
 dx download "$truth_vcf"
+dx download "$high_conf_bedfile"
+dx download project-F2VPgqQ0KzKZkPfQKJ90F8J2:/Workflows/vcfeval_test_may17/human_g1k_v37_chr1-22XYonly.fasta
 
 
 echo "$input_vcf_name"
@@ -27,7 +29,7 @@ else
 fi
 
 #capture panel number from bedfile
-panelnumber=$bedfile_prefix
+panelnumber=$panel_bedfile_prefix
 
 #make folders to put output files
 mkdir -p ~/out/vcfeval_files/vcfeval_output ~/out/rtg_output/vcfeval_output
@@ -37,7 +39,7 @@ sed 's/chr//' $vcfname > ~/$input_vcf_prefix.minuschr.vcf
 sed  -i 's/chr//' $panelnumber.bed
 
 #create sdf
-/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf ~/genome.fa
+/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf ~/human_g1k_v37_chr1-22XYonly.fasta
 
 # #unzip truth VCF
 # gzip -cd $truth_vcf > /home/dnanexus/truth.vcf
@@ -58,7 +60,7 @@ bgzip -c ~/$input_vcf_prefix.minuschr.vcf > ~/test.vcf.gz
 tabix -p vcf ~/test.vcf.gz
 
 #create intersect bedfile
- /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b ~/NA12878.bed > intersect.bed
+ /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b $high_conf_bedfile_name > intersect.bed
 
 # run RTG
 /usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b $truth_vcf_name --bed-regions intersect.bed -c ~/test.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=$score_field

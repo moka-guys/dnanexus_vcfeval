@@ -13,9 +13,16 @@
     {
       "name": "input_vcf",
       "label": "input vcf",
-      "help": "The vcf file to be normalised and decomposed",
+      "help": "The vcf file to be compared to truth set",
       "class": "file",
       "patterns": ["*vcf*"]
+    },
+    {
+      "name": "panel_bedfile",
+      "label": "panel bedfile",
+      "help": "bedfile containing region (e.g. panel) covered in input vcf",
+      "class": "file",
+      "patterns": ["*.bed"]
     },
     {
       "name": "truth_vcf",
@@ -25,9 +32,9 @@
       "patterns": ["*vcf*"]
     },
     {
-      "name": "bedfile",
-      "label": "bedfile",
-      "help": "bedfile",
+      "name": "high_conf_bedfile",
+      "label": "GIAB high conf bedfile",
+      "help": "GIAB high confidence regions bedfile",
       "class": "file",
       "patterns": ["*.bed"]
     },
