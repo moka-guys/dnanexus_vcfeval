@@ -1,7 +1,7 @@
 {
   "name": "vcfeval",
   "title": "vcfeval",
-  "summary": "v1.1 - Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
+  "summary": "v1.2 - Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
   "tags": [
     "Create Truthset"
   ],

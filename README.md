@@ -1,4 +1,4 @@
-# dnanexus_vcfeval v1.1
+# dnanexus_vcfeval v1.2
 
 ## What does this app do?
 This calculates sensitivity and specificity using the NA12878 HapMap sample. 
