@@ -9,62 +9,65 @@ sudo update-alternatives --install /usr/bin/java java /usr/bin/jdk1.8.0_45/bin/j
 
 # Fetch input files
 dx download "$input_vcf" 
-dx download "$bedfile" 
+dx download "$panel_bedfile" 
+dx download "$truth_vcf"
+dx download "$high_conf_bedfile"
+dx download "$ref_genome"
 
-#input_vcf2=$input_vcf
-#check if vcf is .gz
 echo "$input_vcf_name"
 vcfname="$input_vcf_name"
 if [[  $vcfname =~ \.gz$ ]]; then 
-	echo "ZIPPED VCF unzipping.";
-	gzip -cd $input_vcf_name > $input_vcf_prefix.vcf;
-	#input_vcf=$input_vcf_prefix
-	#input_vcf_prefix=$(basename $input_vcf .vcf.gz)
+	vcfname=$(echo ${vcfname%.*})
+	echo "ZIPPED VCF unzipping."
+	gzip -cd $input_vcf_name > $vcfname
+	#vcfname=$input_vcf_prefix.vcf
+	echo $vcfname
 else 
-	echo "not zipped";
+	echo "not zipped"
+	echo $vcfname
 fi
 
-# if [[ input_vcf2 =~ \.gz$ ]] then; do
-# 	#unzip
-# 	gzip -cd $input_vcf2 > unzipped_vcf
-# 	input_vcf2=unzipped_vcf
-# done
-
-#make vt , rtg and bedtools executable
-#sudo chmod u=x /usr/bin/vt/vt
-#sudo chmod u=x /usr/bin/rtg-tools-3.7-23b7d60/rtg
-#sudo chmod u=x /usr/bin/bedtools2/bin/bedtools
-
-panelnumber=$bedfile_prefix
+#capture panel number from bedfile
+panelnumber=$panel_bedfile_prefix
 
 #make folders to put output files
 mkdir -p ~/out/vcfeval_files/vcfeval_output ~/out/rtg_output/vcfeval_output
 
 #remove chr from vcf and bedfile (incase present)
-sed 's/chr//' $input_vcf_prefix.vcf > ~/$input_vcf_prefix.minuschr.vcf
+sed 's/chr//' $vcfname > ~/$input_vcf_prefix.minuschr.vcf
 sed  -i 's/chr//' $panelnumber.bed
 
 #create sdf
-/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf ~/genome.fa
+/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf $ref_genome_name
+
+# #unzip truth VCF
+# gzip -cd $truth_vcf > /home/dnanexus/truth.vcf
+
+# # Run vt on truth vcf
+# /usr/bin/vt/vt  decompose -s /home/dnanexus/truth.vcf | /usr/bin/vt/vt normalize -r ~/genome.fa - > /home/dnanexus/normalised_truth.vcf
+
+# # zip and index the vcf file
+# bgzip -c /home/dnanexus/home/dnanexus/normalised_truth.vcf > /home/dnanexus/home/dnanexus/normalised_truth.vcf.gz
+# tabix -p vcf /home/dnanexus/home/dnanexus/normalised_truth.vcf.gz
+tabix -p vcf $truth_vcf_name
 
  
-# Run vt
-/usr/bin/vt/vt  decompose -s ~/$input_vcf_prefix.minuschr.vcf | /usr/bin/vt/vt normalize -r ~/genome.fa - > ~/$input_vcf_prefix.minuschr_normalised.vcf
-
-# zip and index the vcf file
-bgzip -c ~/$input_vcf_prefix.minuschr_normalised.vcf > ~/normalised.vcf.gz
-tabix -p vcf ~/normalised.vcf.gz
+# Run vt on test vcf
+#/usr/bin/vt/vt  decompose -s ~/$input_vcf_prefix.minuschr.vcf | /usr/bin/vt/vt normalize -r ~/genome.fa - > ~/$input_vcf_prefix.minuschr_normalised.vcf
+# zip and index the test vcf file
+bgzip -c ~/$input_vcf_prefix.minuschr.vcf > ~/test.vcf.gz
+tabix -p vcf ~/test.vcf.gz
 
 #create intersect bedfile
- /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b ~/NA12878.bed > intersect.bed
+ /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b $high_conf_bedfile_name > intersect.bed
 
 # run RTG
-/usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b /home/dnanexus/GIAB_NA12878_v2.18_minus_chr.vcf.gz --bed-regions intersect.bed -c ~/normalised.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=QUAL
+/usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b $truth_vcf_name --bed-regions intersect.bed -c ~/test.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=$score_field
 /usr/bin/rtg-tools-3.7-23b7d60/rtg rocplot --png=/home/dnanexus/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.roccurve.png /home/dnanexus/out/rtg_output/vcfeval_output/rtg/weighted_roc.tsv.gz
 
 python read_vcf_output.py
 
-mv  ~/$input_vcf_prefix.minuschr_normalised.vcf ~/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.minuschr_normalised.vcf
+mv  ~/$input_vcf_prefix.minuschr.vcf ~/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.minuschr_normalised.vcf
 mv ~/intersect.bed  ~/out/vcfeval_files/vcfeval_output/$panelnumber.NA12878intersect.bed
 mv ~/medcalc_input.txt ~/out/vcfeval_files/vcfeval_output/$panelnumber.medcalc_input.txt
 

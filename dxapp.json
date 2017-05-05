@@ -1,28 +1,65 @@
 {
   "name": "vcfeval",
   "title": "vcfeval",
-  "summary": "v1.1 - Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
+  "summary": "v1.2 - Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
   "tags": [
     "Create Truthset"
   ],
       "properties": {
-    "github release": "v1.1"
+    "github release": "v1.2"
   },
   "dxapi": "1.0.0",
   "inputSpec": [
     {
       "name": "input_vcf",
       "label": "input vcf",
-      "help": "The vcf file to be normalised and decomposed",
+      "help": "The vcf file to be compared to truth set",
       "class": "file",
       "patterns": ["*vcf*"]
     },
     {
-      "name": "bedfile",
-      "label": "bedfile",
-      "help": "bedfile",
+      "name": "panel_bedfile",
+      "label": "panel bedfile",
+      "help": "bedfile containing region (e.g. panel) covered in input vcf",
       "class": "file",
       "patterns": ["*.bed"]
+    },
+    {
+      "name": "truth_vcf",
+      "label": "truth vcf",
+      "help": "The GIAB truth set vcf file",
+      "class": "file",
+      "patterns": ["*vcf*"]
+    },
+    {
+      "name": "high_conf_bedfile",
+      "label": "GIAB high conf bedfile",
+      "help": "GIAB high confidence regions bedfile",
+      "class": "file",
+      "patterns": ["*.bed"]
+    },
+    {
+      "name": "ref_genome",
+      "label": "reference genome",
+      "help": "reference genome in fasta format",
+      "class": "file",
+      "patterns": ["*.fasta"]
+    },
+    {
+      "name": "score_field",
+      "class": "string",
+      "default": "QUAL",
+      "choices": [
+      "QUAL",
+      "INFO.QD",
+      "GQ", 
+      "DP",
+      "INFO.SOR",
+      "INFO.MQ",
+      "INFO.MQRankSum",
+      "INFO.ReadPosRankSum",
+      "INFO.FS"
+      ]
     }
   ],
   "outputSpec": [

@@ -1,7 +1,7 @@
-# dnanexus_vcfeval v1.1
+# dnanexus_vcfeval v1.2
 
 ## What does this app do?
-This calculates sensitivity and specificity using the NA12878 HapMap sample. 
+This calculates sensitivity and specificity using the NA12878 HapMap sample.
 
 ## What are typical use cases for this app?
 When validating a new test, or changes to a process the NA12878 DNA sample can be run through a process. The resulting 'test' vcf  contains all the variants detected by the test.
@@ -12,9 +12,15 @@ The app produces a count of true positive, true negative, false positive and fal
 
 ## What data are required for this app to run?
 
-This app requires a vcf (this can be .vcf or .vcf.gz) and a bed file.
+This app requires:
+1. A test vcf (this can be .vcf or .vcf.gz)
+2. A test bed file
+3. A truth set vcf
+4. A high confidence region bed file
+5. A reference genome in fasta format
+
 Note:  
-1. The bedfile name must not contain spaces or characters such as + and -
+* The bedfile name must not contain spaces or characters such as + and -
 
 
 ## What does this app output?
@@ -31,12 +37,9 @@ This app outputs:
 
 
 ## How does this app work?
-* The NA12878 truth vcf and bed file is packaged within the app.
 
 * The test vcf and bed file are parsed to remove 'chr'
-
-* vt is then used to decompose the test vcf
-* The normalised vcf is then indexed and zipped
+* The vcf is then indexed and zipped
 * The intersect between the NA12878 high confidence regions and the test bed is created
 * RTG vcf eval is used to calculate the sensitivity and specificity
 * RTG rocplot creates a ROC curve.
@@ -45,11 +48,8 @@ This app outputs:
 
 ## What are the limitations of this app
 The number of true negatives are calculated by counting the number of bases in the bed file and then subtracting the number of true positive, false positive and false negative variants.
-Therefore this true negative count may not be accurate if variants are *not single base variants*. 
+Therefore this true negative count may not be accurate if variants are *not single base variants*.
 
-Also if regions in the bedfile overlap those positions will be counted twice, increasing the true negative count.
+Also if regions in the bedfile overlap, variants in these regions will be counted twice, increasing the true negative count.
 
-## This app was made by Viapath Genome Informatics 
-
-
-
+## This app was made by Viapath Genome Informatics
