@@ -1,75 +1,101 @@
 #!/bin/bash
 
-# The following line causes bash to exit at any point if there is any error
-# and to output each line as it is executed -- useful for debugging
-set -e -x
+# -e = exit on error; -x = output each line that is executed to log; -o pipefail = throw an error if there's an error in pipeline
+set -e -x -o pipefail
 
-# set default java to java version 8 (prepackaged in this app)
-sudo update-alternatives --install /usr/bin/java java /usr/bin/jdk1.8.0_45/bin/java 10000
+#Download inputs from DNAnexus in parallel, these will be downloaded to /home/dnanexus/in/
+dx-download-all-inputs --parallel
 
-# Fetch input files
-dx download "$input_vcf" 
-dx download "$panel_bedfile" 
-dx download "$truth_vcf"
-dx download "$high_conf_bedfile"
-dx download "$ref_genome"
+#Extract required resources from assets folder into /home/dnanexus/
+dx cat project-ByfFPz00jy1fk6PjpZ95F27J:file-BxVGV9Q022qPQ5f2pbQYqbP4 | tar xf - # ~/hs37d5-fasta.tar -> ~/hs37d5.fa
+dx cat project-ByfFPz00jy1fk6PjpZ95F27J:file-BxVGXBQ022qPfbkzbJQk87bp | tar xf - # ~/hs37d5-sdf.tar -> ~/hs37d5.sdf/
+dx cat project-ByfFPz00jy1fk6PjpZ95F27J:file-BxVGJfj022q45ff2b0j8V73B | tar xf - # ~/stratification-bed-files-f35a0f7.tar -> ~/bed_files/
 
-echo "$input_vcf_name"
-vcfname="$input_vcf_name"
-if [[  $vcfname =~ \.gz$ ]]; then 
-	vcfname=$(echo ${vcfname%.*})
-	echo "ZIPPED VCF unzipping."
-	gzip -cd $input_vcf_name > $vcfname
-	#vcfname=$input_vcf_prefix.vcf
-	echo $vcfname
+#The files-HG001.tsv file is a master file containing relative filepaths to all of the bed files used by hap.py for results stratifcation.
+#files-HG001.tsv must in the parent directory of the bed_files/ directory for relative filepaths to be correct, so copy from /home/dnanexus/bed_files/ > /home/dnanexus/ 
+cp ./bed_files/files-HG001.tsv ./files-HG001.tsv
+
+#The app accept both uncompressed (.vcf) and gzipped (.vcf.gz) VCF files as input
+#If files are compressed, they need to be decompressed.
+
+if [[  $truth_vcf_path =~ \.gz$ ]]; then
+	#If truth vcf is gzipped...	
+	echo "ZIPPED truth VCF unzipping."
+	#Unzip the vcf
+	gzip -d $truth_vcf_path
+	#Remove the .gz suffix from truth_vcf filepath
+	truth_vcf_path=$(echo ${truth_vcf_path%.*})
 else 
-	echo "not zipped"
-	echo $vcfname
+	echo "truth VCF not zipped"
 fi
 
-#capture panel number from bedfile
-panelnumber=$panel_bedfile_prefix
+#Repeat above steps for the query_vcf
+if [[  $query_vcf_path =~ \.gz$ ]]; then 
+	#If query vcf is gzipped...		
+	echo "ZIPPED query VCF unzipping."
+	#Unzip the vcf
+	gzip -d $query_vcf_path
+	#Remove the .gz suffix from query_vcf filepath
+	query_vcf_path=$(echo ${query_vcf_path%.*})
+else 
+	echo "query VCF not zipped"
+fi
 
-#make folders to put output files
-mkdir -p ~/out/vcfeval_files/vcfeval_output ~/out/rtg_output/vcfeval_output
+#Strip 'chr' from chromsome field of VCF and BED files
+sed  -i 's/chr//' $truth_vcf_path $query_vcf_path $panel_bed_path $high_conf_bed_path
 
-#remove chr from vcf and bedfile (incase present)
-sed 's/chr//' $vcfname > ~/$input_vcf_prefix.minuschr.vcf
-sed  -i 's/chr//' $panelnumber.bed
+#Zip VCFs
+bgzip $truth_vcf_path
+bgzip $query_vcf_path
+#Following gzipping, append .gz to vcf filepath variables
+truth_vcf_path=${truth_vcf_path}.gz
+query_vcf_path=${query_vcf_path}.gz
+#Index VCFs
+tabix -p vcf ${truth_vcf_path}
+tabix -p vcf ${query_vcf_path}
 
-#create sdf
-/usr/bin/rtg-tools-3.7-23b7d60/rtg format -o ~/reference.sdf $ref_genome_name
+#Run hap.py in docker container
+#The optional arguments used are the same as those used when running the precisionFDA GA4GH Benchmarking in vcfeval-partial-credit mode and other options left as default
+#Mount /home/dnanexus/ to /data/
+#For input files that are stored in /home/dnanexus/in/... replace '/home/dnanexus' with '/data' in filepath using: ${orig_filepath/home\/dnanexus/data} 
+#If sample is flagged as NA12878, use HG001 stratification bed files (indexed in files-HG001.tsv) to provide additional stratification of results
+if $na12878; then
+     dx-docker run -v /home/dnanexus/:/data pkrusche/hap.py:v0.3.9 /opt/hap.py/bin/hap.py \
+          -r /data/hs37d5.fa --stratification data/files-HG001.tsv \
+          --gender female --decompose --leftshift --adjust-conf-regions \
+          --engine vcfeval -f ${high_conf_bed_path/home\/dnanexus/data} -T ${panel_bed_path/home\/dnanexus/data} \
+          --ci-alpha 0.05 -o data/"$prefix" ${truth_vcf_path/home\/dnanexus/data} ${query_vcf_path/home\/dnanexus/data}
+#Else if sample is not flagged as NA12878, run same command as above but without the stratification option
+else
+     dx-docker run -v /home/dnanexus/:/data pkrusche/hap.py:v0.3.9 /opt/hap.py/bin/hap.py \
+          -r /data/hs37d5.fa \
+          --gender female --decompose --leftshift --adjust-conf-regions \
+          --engine vcfeval -f ${high_conf_bed_path/home\/dnanexus/data} -T ${panel_bed_path/home\/dnanexus/data} \
+          --ci-alpha 0.05 -o data/"$prefix" ${truth_vcf_path/home\/dnanexus/data} ${query_vcf_path/home\/dnanexus/data}
+fi
 
-# #unzip truth VCF
-# gzip -cd $truth_vcf > /home/dnanexus/truth.vcf
+# Generate summary_report HTML using ga4gh reporting tool (https://github.com/ga4gh/benchmarking-tools/tree/master/reporting/basic)
+# Input is in the format {method-name}_{comparison-name}:{path-to-hap.py-roc.all.csv.gz-output}
+# Here method name uses the VCF name (replacing underscores with hyphens because underscore is used to separate the 'method' and 'comparison method' fields)
+# and the comparison method is vcfeval-hap.py 
+dx-docker run -v /home/dnanexus/:/data mokaguys/ga4gh_rep.py:v1.0 -o /data/${prefix}.summary_report.html ${prefix//_/-}_vcfeval-hap.py:/data/${prefix}.roc.all.csv.gz
 
-# # Run vt on truth vcf
-# /usr/bin/vt/vt  decompose -s /home/dnanexus/truth.vcf | /usr/bin/vt/vt normalize -r ~/genome.fa - > /home/dnanexus/normalised_truth.vcf
+#Create csv file containing version numbers of resources and apps used.
+echo "#Resource,Version" > "$prefix".version-log.csv
+echo "GIAB(NA12878),v3.3.2" >> "$prefix".version-log.csv
+echo "Reference,hs37d5" >> "$prefix".version-log.csv
+echo "hap.py,v0.3.9(Docker)" >> "$prefix".version-log.csv
+echo "tabix,v0.2.6-2" >> "$prefix".version-log.csv
 
-# # zip and index the vcf file
-# bgzip -c /home/dnanexus/home/dnanexus/normalised_truth.vcf > /home/dnanexus/home/dnanexus/normalised_truth.vcf.gz
-# tabix -p vcf /home/dnanexus/home/dnanexus/normalised_truth.vcf.gz
-tabix -p vcf $truth_vcf_name
+#Make directories to hold outputs
+mkdir /home/dnanexus/out
+mkdir /home/dnanexus/out/summary_csv
+mkdir /home/dnanexus/out/summary_html
+mkdir /home/dnanexus/out/detailed_results
+#Move outputs to correct directories for upload back to project
+cp "$prefix".summary.csv /home/dnanexus/out/summary_csv/
+cp "$prefix".summary_report.html /home/dnanexus/out/summary_html/
+zip -r /home/dnanexus/out/detailed_results/"$prefix".zip "$prefix".*
 
- 
-# Run vt on test vcf
-#/usr/bin/vt/vt  decompose -s ~/$input_vcf_prefix.minuschr.vcf | /usr/bin/vt/vt normalize -r ~/genome.fa - > ~/$input_vcf_prefix.minuschr_normalised.vcf
-# zip and index the test vcf file
-bgzip -c ~/$input_vcf_prefix.minuschr.vcf > ~/test.vcf.gz
-tabix -p vcf ~/test.vcf.gz
-
-#create intersect bedfile
- /usr/bin/bedtools2/bin/bedtools intersect -a $panelnumber.bed -b $high_conf_bedfile_name > intersect.bed
-
-# run RTG
-/usr/bin/rtg-tools-3.7-23b7d60/rtg vcfeval -b $truth_vcf_name --bed-regions intersect.bed -c ~/test.vcf.gz -t /home/dnanexus/reference.sdf -o ~/out/rtg_output/vcfeval_output/rtg --vcf-score-field=$score_field
-/usr/bin/rtg-tools-3.7-23b7d60/rtg rocplot --png=/home/dnanexus/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.roccurve.png /home/dnanexus/out/rtg_output/vcfeval_output/rtg/weighted_roc.tsv.gz
-
-python read_vcf_output.py
-
-mv  ~/$input_vcf_prefix.minuschr.vcf ~/out/vcfeval_files/vcfeval_output/$input_vcf_prefix.minuschr_normalised.vcf
-mv ~/intersect.bed  ~/out/vcfeval_files/vcfeval_output/$panelnumber.NA12878intersect.bed
-mv ~/medcalc_input.txt ~/out/vcfeval_files/vcfeval_output/$panelnumber.medcalc_input.txt
-
-#mark-section "Uploading results"
+#Upload outputs (from /home/dnanexus/out) to DNAnexus
 dx-upload-all-outputs --parallel

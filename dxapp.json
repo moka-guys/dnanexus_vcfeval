@@ -1,93 +1,110 @@
 {
-  "name": "vcfeval",
-  "title": "vcfeval",
-  "summary": "v1.2 - Use RTG vcfeval to calculate sensitivity and specificity of a vcf file.",
-  "tags": [
-    "Create Truthset"
-  ],
-      "properties": {
-    "github release": "v1.2"
+  "name": "vcfeval_hap.py_v1.3",
+  "summary": "v1.3 - Use vcfeval and hap.py to calculate NGS performance metrics against truth set (based on precisionFDA app)",
+  "properties": {
+    "github release": "v1.3"
   },
   "dxapi": "1.0.0",
   "inputSpec": [
     {
-      "name": "input_vcf",
-      "label": "input vcf",
-      "help": "The vcf file to be compared to truth set",
+      "name": "query_vcf",
+      "label": "Query VCF",
+      "help": "VCF file containing queryset variants (.vcf or .vcf.gz)",
       "class": "file",
-      "patterns": ["*vcf*"]
-    },
-    {
-      "name": "panel_bedfile",
-      "label": "panel bedfile",
-      "help": "bedfile containing region (e.g. panel) covered in input vcf",
-      "class": "file",
-      "patterns": ["*.bed"]
+      "patterns": ["*.vcf", "*.vcf.gz"]
     },
     {
       "name": "truth_vcf",
-      "label": "truth vcf",
-      "help": "The GIAB truth set vcf file",
+      "label": "Truth VCF",
+      "help": "VCF file containing truthset variants (.vcf or .vcf.gz)",
       "class": "file",
-      "patterns": ["*vcf*"]
+      "patterns": ["*.vcf", "*.vcf.gz"]
     },
     {
-      "name": "high_conf_bedfile",
-      "label": "GIAB high conf bedfile",
-      "help": "GIAB high confidence regions bedfile",
+      "name": "panel_bed",
+      "label": "Panel BED",
+      "help": "BED containing region (e.g. panel) covered in queryset vcf",
       "class": "file",
       "patterns": ["*.bed"]
     },
     {
-      "name": "ref_genome",
-      "label": "reference genome",
-      "help": "reference genome in fasta format",
+      "name": "high_conf_bed",
+      "label": "High Confidence BED",
+      "help": "BED containing high confidence region for truth set",
       "class": "file",
-      "patterns": ["*.fasta"]
+      "patterns": ["*.bed"]
     },
     {
-      "name": "score_field",
+      "name": "prefix",
+      "label": "Output prefix",
       "class": "string",
-      "default": "QUAL",
-      "choices": [
-      "QUAL",
-      "INFO.QD",
-      "GQ", 
-      "DP",
-      "INFO.SOR",
-      "INFO.MQ",
-      "INFO.MQRankSum",
-      "INFO.ReadPosRankSum",
-      "INFO.FS"
-      ]
+      "optional": false
+    },
+    {
+      "name": "na12878",
+      "label": "Perform NA12878 stratification? (SEE README)",
+      "help": "If the truth set is NA12878, stratification of results will be performed. However this requires the instance type to be upgraded to at least 7GB of RAM and will take longer.",
+      "class": "boolean",
+      "default": false
     }
   ],
   "outputSpec": [
     {
-      "name": "rtg_output",
-      "label": "RTG output folder",
-      "help": "Folder containing all the rtg output.",
-      "class": "array:file",
-      "patterns": ["*"]
+      "name": "detailed_results",
+      "label": "Archive with detailed results",
+      "class": "file"
     },
     {
-      "name": "vcfeval_files",
-      "label": "files made when performing vcfeval",
-      "help": "",
-      "class": "array:file",
-      "patterns": ["*.bed","*.vcf"]
+      "name": "summary_csv",
+      "label": "Summary CSV",
+      "class": "file"
+    },
+    {
+      "name": "summary_html",
+      "label": "Summary HTML report",
+      "class": "file"
     }
   ],
-  "runSpec": {"execDepends": [
-  {"name":"tabix"}
-      ],
-    "systemRequirements": {
-      "main": {
-        "instanceType": "mem1_ssd1_x2"
+  "runSpec": {
+    "execDepends": [
+      {
+        "version": "0.2.6-2",
+        "name": "tabix"
       }
-    },
+    ],
+    "assetDepends": [
+      {
+        "project": "project-ByfFPz00jy1fk6PjpZ95F27J",
+        "folder": "/Apps/vcfeval_hap.py/assets",
+        "version": "0.0.1",
+        "name": "pkrusche/hap.py:v0.3.9"
+      },
+      {
+        "project": "project-ByfFPz00jy1fk6PjpZ95F27J",
+        "folder": "/Apps/vcfeval_hap.py/assets",
+        "version": "0.0.1",
+        "name": "mokaguys/ga4gh_rep.py:v1.0"
+      }
+    ],
     "file": "src/code.sh",
-    "interpreter": "bash"
+    "release": "14.04",
+    "interpreter": "bash",
+    "distribution": "Ubuntu"
   },
-  "details": {}}
-
+  "access": {
+    "allProjects": "VIEW",
+    "network": [
+      "*"
+    ]
+  },
+  "ignoreReuse": false,
+  "regionalOptions": {
+    "aws:us-east-1": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem1_ssd1_x2"
+        }
+      }
+    }
+  }
+}

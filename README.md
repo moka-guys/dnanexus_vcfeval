@@ -1,55 +1,58 @@
-# dnanexus_vcfeval v1.2
+# vcfeval_hap.py v1.3
+
+## hap.py version
+v0.3.9 (Docker: https://hub.docker.com/r/pkrusche/hap.py/)
+
 
 ## What does this app do?
-This calculates sensitivity and specificity using the NA12878 HapMap sample.
+Compares a query VCF to a truth VCF to calculate performance metrics including sensitivity and precision using hap.py and vcfeval. It is equivalent to running the precisionFDA GA4GH benchmarking app in 'vcfeval-partialcredit' mode with other options left as default. More information available at the following links:
+* https://precision.fda.gov/apps/app-F5YXbp80PBYFP059656gYxXQ
+* https://github.com/ga4gh/benchmarking-tools/tree/master/doc/ref-impl
 
 ## What are typical use cases for this app?
-When validating a new test, or changes to a process the NA12878 DNA sample can be run through a process. The resulting 'test' vcf  contains all the variants detected by the test.
-
-This list of variants can be compared to the truth set and used to calculate specificity and sensitivity.
-
-The app produces a count of true positive, true negative, false positive and false negative calls which can then be used to calculate sensitivity and specificity (with 95% confidence intervals using the calculator at https://www.medcalc.org/calc/diagnostic_test.php)
+Validating an NGS workflow using the NA12878 (NIST Genome in a Bottle) benchmarking sample.
 
 ## What data are required for this app to run?
 
-This app requires:
-1. A test vcf (this can be .vcf or .vcf.gz)
-2. A test bed file
-3. A truth set vcf
-4. A high confidence region bed file
-5. A reference genome in fasta format
+Input files:
+1. A query VCF (.vcf | .vcf.gz) - *output from the workflow being validated*
+2. A truth VCF (.vcf | .vcf.gz)
+3. A panel BED file (.bed) - *region covered in query vcf*
+4. A high confidence region BED file (.bed) - *high confidence region for truth set*
+
+Parameters:
+1. Output files prefix (required)
+2. Output folder (optional)
+3. Indication if additional stratification for NA12878 samples should be performed (default = False)
+    * If truth set is NA12878, additional stratification of results can be performed and output in extended.csv file
+    * *HOWEVER* the instance type will need to be upgraded to have at least 7GB of RAM, and the app will take significantly longer to run
 
 Note:  
-* The bedfile name must not contain spaces or characters such as + and -
+* The BED file names must not contain spaces or characters such as + and -
 
 
 ## What does this app output?
 
 This app outputs:
-1. RTG output folder including
- * VCF files for true positive, false positive and false negatives
- * ROC curves
- * summary.txt containing the TP/FP/FN/TN counts
-2. A file which has parsed summary.txt and the bedfile to produce an output which can be used with the online statistical calculator.
-3. The normalised ROC curve
-4. A bedfile with the intersect between the NA12878 high confidence regions and the test bed file.
-5. The normalised test vcf
+1. Summary csv file containing separate performance metrics for SNPs and Indels
+2. Summary report HTML (generated using ga4gh rep.py https://github.com/ga4gh/benchmarking-tools/tree/master/reporting/basic)
+3. Detailed results folder containing:
+    * Extended csv file - *Including results stratification and confidence intervals*
+    * VCF file - *annotated vcf showing TP, FP and FN variants*
+    * runinfo JSON - *detailed information about hap.py run*
+    * version log - *version numbers of software used in app*
+    * metrics JSON - *JSON file containing all computed metrics and tables*
 
 
 ## How does this app work?
 
-* The test vcf and bed file are parsed to remove 'chr'
-* The vcf is then indexed and zipped
-* The intersect between the NA12878 high confidence regions and the test bed is created
-* RTG vcf eval is used to calculate the sensitivity and specificity
-* RTG rocplot creates a ROC curve.
-
-* A python script then parses the vcfeval outputs and the bed file to produce an output which can be easily entered into the medcalc software.
+* 'chr' is stripped from the chromosome field of the VCF and BED files (if hg19 format used)
+* Indexed and zipped VCF files passed to hap.py:
+   * Uses vcfeval comparison engine
+   * If the sample is NA12878, additional stratification is performed using bed files found here: https://github.com/ga4gh/benchmarking-tools/tree/master/resources/stratification-bed-files
+   * Summary HTML is generated
 
 ## What are the limitations of this app
-The number of true negatives are calculated by counting the number of bases in the bed file and then subtracting the number of true positive, false positive and false negative variants.
-Therefore this true negative count may not be accurate if variants are *not single base variants*.
-
-Also if regions in the bedfile overlap, variants in these regions will be counted twice, increasing the true negative count.
+* Only works with inputs mapped to GRCh37
 
 ## This app was made by Viapath Genome Informatics
